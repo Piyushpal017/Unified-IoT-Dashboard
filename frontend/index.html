@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Unified IoT Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Unified IoT Dashboard</h1>
+
+        <!-- Latest Data Card -->
+        <div class="card">
+            <h2>Latest Device Data</h2>
+
+            <table id="data-table">
+                <thead>
+                    <tr>
+                        <th>Device ID</th>
+                        <th>Voltage (V)</th>
+                        <th>Current (A)</th>
+                        <th>Power (W)</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Chart Card -->
+        <div class="card">
+            <h2>Power History (meter_101)</h2>
+            <canvas id="powerChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+
+</body>
+</html>
