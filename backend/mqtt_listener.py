@@ -46,4 +46,4 @@ client.on_connect = on_connect
 client.on_message = on_message
 
 client.connect(BROKER, PORT, 60)
-client.loop_forever()
+client.loop_start()

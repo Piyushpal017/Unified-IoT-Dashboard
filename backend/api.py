@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from database import SessionLocal
 from models import Device, Telemetry
 from fastapi.middleware.cors import CORSMiddleware
+import mqtt_listener
 
 app = FastAPI(title="Unified IoT Dashboard API")
 
