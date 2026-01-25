@@ -3,7 +3,7 @@ import paho.mqtt.client as mqtt
 from database import SessionLocal
 from models import Device, Telemetry
 
-BROKER = "localhost"
+BROKER = "broker.hivemq.com"
 PORT = 1883
 TOPIC = 'iot/meter/data'
 

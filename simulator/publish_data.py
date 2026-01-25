@@ -3,7 +3,7 @@ import time
 import random
 import paho.mqtt.client as mqtt
 
-BROKER = "localhost"
+BROKER = "broker.hivemq.com"
 PORT = 1883
 TOPIC = "iot/meter/data"
 
