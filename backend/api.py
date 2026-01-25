@@ -25,15 +25,21 @@ def start_background_services():
     print("🚀 Backend starting...")
 
     # MQTT Subscriber (listener)
-    mqtt_listener.start_mqtt()
-    print("📡 MQTT Subscriber started")
+    try:
+        mqtt_listener.start_mqtt()
+        print("📡 MQTT Subscriber started")
+    except Exception as e:
+        print("❌ MQTT Subscriber failed:", e)
 
     # MQTT Publisher (fake data generator)
-    threading.Thread(
-        target=publisher.start_publisher,
-        daemon=True
-    ).start()
-    print("📤 MQTT Publisher started")
+    try:
+        threading.Thread(
+            target=publisher.start_publisher,
+            daemon=True
+        ).start()
+        print("📤 MQTT Publisher started")
+    except Exception as e:
+        print("❌ MQTT Publisher failed:", e)
 
 # ------------------ APIs ------------------
 
@@ -49,7 +55,6 @@ def get_devices():
     devices = db.query(Device).all()
     db.close()
     return [{"device_id": d.device_id} for d in devices]
-
 
 # Get latest data of all devices
 @app.get("/latest-data")
@@ -76,7 +81,6 @@ def get_latest_data():
 
     db.close()
     return result
-
 
 # Get telemetry history of one device
 @app.get("/telemetry/{device_id}")

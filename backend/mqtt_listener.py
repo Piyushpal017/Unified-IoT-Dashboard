@@ -1,3 +1,4 @@
+# mqtt_listener.py
 import json
 import paho.mqtt.client as mqtt
 from database import SessionLocal
@@ -7,42 +8,49 @@ BROKER = "broker.hivemq.com"
 PORT = 1883
 TOPIC = "iot/meter/data"
 
-def on_connect(client, userdata, flags, rc, properties=None):
-    print("Backend connected to MQTT broker")
-    client.subscribe(TOPIC)
+def start_mqtt():
+    def on_connect(client, userdata, flags, rc, properties=None):
+        print("Backend connected to MQTT broker")
+        client.subscribe(TOPIC)
 
-def on_message(client, userdata, msg):
-    payload = msg.payload.decode()
+    def on_message(client, userdata, msg):
+        payload = msg.payload.decode()
 
-    try:
-        data = json.loads(payload)
-        db = SessionLocal()
+        try:
+            data = json.loads(payload)
+            db = SessionLocal()
 
-        device = db.query(Device).filter(Device.device_id == data["device_id"]).first()
-        if not device:
-            device = Device(device_id=data["device_id"])
-            db.add(device)
+            device = (
+                db.query(Device)
+                .filter(Device.device_id == data["device_id"])
+                .first()
+            )
 
-        telemetry = Telemetry(
-            device_id=data["device_id"],
-            voltage=data["voltage"],
-            current=data["current"],
-            power=data["power"],
-            timestamp=data["timestamp"]
-        )
+            if not device:
+                device = Device(device_id=data["device_id"])
+                db.add(device)
+                db.commit()
 
-        db.add(telemetry)
-        db.commit()
-        db.close()
+            telemetry = Telemetry(
+                device_id=data["device_id"],
+                voltage=data["voltage"],
+                current=data["current"],
+                power=data["power"],
+                timestamp=data["timestamp"],
+            )
 
-        print("Saved to DB:", data)
+            db.add(telemetry)
+            db.commit()
+            db.close()
 
-    except Exception as e:
-        print("Error saving data:", e)
+            print("Saved to DB:", data)
 
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-client.on_connect = on_connect
-client.on_message = on_message
+        except Exception as e:
+            print("MQTT Error:", e)
 
-client.connect(BROKER, PORT, 1883)
-client.loop_start()
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    client.on_connect = on_connect
+    client.on_message = on_message
+
+    client.connect(BROKER, PORT, 60)
+    client.loop_start()
