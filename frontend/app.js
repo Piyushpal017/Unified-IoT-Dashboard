@@ -1,8 +1,10 @@
 const API_BASE = "https://unified-iot-dashboard-bhm0.onrender.com";
 
-// load latest data
+let chart;
+let currentDevice = "";
 
-async function loadLatestData(){
+// ------------------ Latest Data ------------------
+async function loadLatestData() {
     const res = await fetch(`${API_BASE}/latest-data`);
     const data = await res.json();
 
@@ -10,7 +12,7 @@ async function loadLatestData(){
     tbody.innerHTML = "";
 
     data.forEach(d => {
-        const row = `
+        tbody.innerHTML += `
             <tr>
                 <td>${d.device_id}</td>
                 <td>${d.voltage}</td>
@@ -19,34 +21,66 @@ async function loadLatestData(){
                 <td>${d.timestamp}</td>
             </tr>
         `;
-        tbody.innerHTML += row;
     });
+
+    populateDeviceDropdown(data.map(d => d.device_id));
 }
 
-// Load power chart
+// ------------------ Dropdown ------------------
+function populateDeviceDropdown(devices) {
+    const select = document.getElementById("deviceSelect");
 
-async function loadPowerChart(){
-    const res = await fetch(`${API_BASE}/telemetry/meter_101`);
+    if (select.options.length === 0) {
+        devices.forEach(d => {
+            const opt = document.createElement("option");
+            opt.value = d;
+            opt.textContent = d;
+            select.appendChild(opt);
+        });
+
+        currentDevice = devices[0];
+        loadPowerChart(currentDevice);
+    }
+}
+
+// ------------------ Chart ------------------
+async function loadPowerChart(deviceId) {
+    const res = await fetch(`${API_BASE}/telemetry/${deviceId}`);
     const data = await res.json();
 
     const labels = data.map(d => d.timestamp).reverse();
     const power = data.map(d => d.power).reverse();
 
-    new Chart(document.getElementById("powerChart"), {
+    if (chart) chart.destroy();
+
+    chart = new Chart(document.getElementById("powerChart"), {
         type: "line",
         data: {
-            labels: labels,
+            labels,
             datasets: [{
-                label: "Power",
+                label: `Power (${deviceId})`,
                 data: power,
-                fill: false
+                borderWidth: 2,
+                tension: 0.4
             }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
         }
     });
 }
 
-loadLatestData();
-loadPowerChart();
+// ------------------ Events ------------------
+document.getElementById("deviceSelect").addEventListener("change", e => {
+    currentDevice = e.target.value;
+    loadPowerChart(currentDevice);
+});
 
-// Auto refresh every 5 sec
-setInterval(loadLatestData, 5000)
+document.getElementById("darkToggle").addEventListener("click", () => {
+    document.body.classList.toggle("dark");
+});
+
+// ------------------ Auto Refresh ------------------
+loadLatestData();
+setInterval(loadLatestData, 5000);
