@@ -10,11 +10,7 @@
 <body>
 
 <div class="container">
-
-    <header>
-        <h1>📊 Unified IoT Dashboard</h1>
-        <button id="darkToggle">🌙 Dark Mode</button>
-    </header>
+    <h1>📊 Unified IoT Dashboard</h1>
 
     <!-- Latest Data -->
     <div class="card">
@@ -34,19 +30,19 @@
         </table>
     </div>
 
-    <!-- Chart -->
+    <!-- Power Chart -->
     <div class="card">
-        <div class="chart-header">
+        <div class="card-header">
             <h2>⚡ Power Usage Trend</h2>
 
-            <select id="deviceSelect"></select>
+            <select id="deviceSelect">
+                <option value="meter_101">meter_101</option>
+                <option value="meter_102">meter_102</option>
+            </select>
         </div>
 
-        <div class="chart-container">
-            <canvas id="powerChart"></canvas>
-        </div>
+        <canvas id="powerChart"></canvas>
     </div>
-
 </div>
 
 <footer>
