@@ -1,39 +1,27 @@
 const API = "https://unified-iot-dashboard-bhm0.onrender.com";
 
-const loader = document.getElementById("loading");
-const tableBody = document.querySelector("#data-table tbody");
+const tableBody = document.getElementById("tableBody");
 const deviceSelect = document.getElementById("deviceSelect");
-const totalDevicesEl = document.getElementById("totalDevices");
-const lastUpdateEl = document.getElementById("lastUpdate");
+const totalDevices = document.getElementById("totalDevices");
+const lastUpdate = document.getElementById("lastUpdate");
+const darkToggle = document.getElementById("darkToggle");
 
 let chart;
 let currentDevice = null;
 
-/* 🌐 Wait for backend (COLD START FIX) */
-async function waitForBackend() {
-  while (true) {
-    try {
-      const res = await fetch(`${API}/latest-data`);
-      const data = await res.json();
-      if (data.length > 0) {
-        loader.classList.add("hidden");
-        renderTable(data);
-        setupDevices(data);
-        updateStats(data);
-        loadGraph();
-        setInterval(refreshAll, 5000);
-        break;
-      }
-    } catch {
-      console.log("Backend waking up...");
-    }
-    await new Promise(r => setTimeout(r, 5000));
-  }
-}
+// DARK MODE
+darkToggle.onclick = () => {
+  document.body.classList.toggle("dark");
+};
 
-/* 📊 Table */
-function renderTable(data) {
+// LOAD TABLE
+async function loadTable() {
+  const res = await fetch(`${API}/latest-data`);
+  const data = await res.json();
+
   tableBody.innerHTML = "";
+  deviceSelect.innerHTML = "";
+
   data.forEach(d => {
     tableBody.innerHTML += `
       <tr>
@@ -44,32 +32,31 @@ function renderTable(data) {
         <td>${d.timestamp}</td>
       </tr>
     `;
+
+    const opt = document.createElement("option");
+    opt.value = d.device_id;
+    opt.textContent = d.device_id;
+    deviceSelect.appendChild(opt);
   });
+
+  totalDevices.textContent = data.length;
+  lastUpdate.textContent = new Date().toLocaleTimeString();
+
+  if (!currentDevice && data.length) {
+    currentDevice = data[0].device_id;
+    loadChart(currentDevice);
+  }
 }
 
-/* 📈 Stats */
-function updateStats(data) {
-  totalDevicesEl.textContent = data.length;
-  lastUpdateEl.textContent = new Date().toLocaleTimeString();
-}
+// LOAD GRAPH
+async function loadChart(device) {
+  currentDevice = device;
 
-/* 🔽 Device dropdown */
-function setupDevices(data) {
-  const devices = [...new Set(data.map(d => d.device_id))];
-  deviceSelect.innerHTML = "";
-  devices.forEach(d => {
-    deviceSelect.innerHTML += `<option value="${d}">${d}</option>`;
-  });
-  currentDevice = devices[0];
-}
-
-/* 📉 Chart */
-async function loadGraph() {
-  const res = await fetch(`${API}/telemetry/${currentDevice}`);
+  const res = await fetch(`${API}/telemetry/${device}`);
   const data = await res.json();
 
-  const labels = data.map(d => d.timestamp).reverse();
-  const values = data.map(d => d.power).reverse();
+  const labels = data.map(d => d.timestamp);
+  const power = data.map(d => d.power);
 
   if (chart) chart.destroy();
 
@@ -78,34 +65,22 @@ async function loadGraph() {
     data: {
       labels,
       datasets: [{
-        label: `Power (${currentDevice})`,
-        data: values,
-        borderWidth: 2,
+        label: `Power (${device})`,
+        data: power,
+        borderColor: "#38bdf8",
         tension: 0.4
       }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
     }
   });
 }
 
-/* 🔄 Auto Refresh */
-async function refreshAll() {
-  const res = await fetch(`${API}/latest-data`);
-  const data = await res.json();
-  renderTable(data);
-  updateStats(data);
-  loadGraph();
-}
+deviceSelect.onchange = e => loadChart(e.target.value);
 
-/* 🔀 Device change */
-deviceSelect.addEventListener("change", e => {
-  currentDevice = e.target.value;
-  loadGraph();
-});
-
-/* 🌙 Dark Mode */
-document.getElementById("darkToggle").onclick = () => {
-  document.body.classList.toggle("dark");
-};
-
-/* 🚀 INIT */
-waitForBackend();
+// AUTO REFRESH (NO SCROLL BUG)
+loadTable();
+setInterval(loadTable, 5000);
+setInterval(() => loadChart(currentDevice), 7000);
