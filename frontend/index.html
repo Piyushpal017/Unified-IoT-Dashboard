@@ -4,30 +4,35 @@
   <meta charset="UTF-8" />
   <title>Unified IoT Dashboard</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<header class="navbar">
+<header>
   <h1>📊 Unified IoT Dashboard</h1>
   <button id="darkToggle">🌙 Dark Mode</button>
 </header>
 
-<div class="container">
+<main>
+  <!-- Loader -->
+  <div id="loading" class="loading">
+    ⏳ Connecting to IoT Server...
+  </div>
 
-  <!-- KPI CARDS -->
-  <div class="kpi-grid">
-    <div class="kpi-card">
+  <!-- Stats -->
+  <section class="stats">
+    <div class="card">
       <h3>Total Devices</h3>
       <p id="totalDevices">0</p>
     </div>
-    <div class="kpi-card">
+    <div class="card">
       <h3>Last Update</h3>
       <p id="lastUpdate">--</p>
     </div>
-  </div>
+  </section>
 
-  <!-- TABLE -->
-  <div class="card">
+  <!-- Table -->
+  <section class="card">
     <h2>Latest Device Readings</h2>
     <table id="data-table">
       <thead>
@@ -41,24 +46,22 @@
       </thead>
       <tbody></tbody>
     </table>
-  </div>
+  </section>
 
-  <!-- GRAPH -->
-  <div class="card">
+  <!-- Chart -->
+  <section class="card">
     <div class="chart-header">
       <h2>⚡ Power Usage Trend</h2>
       <select id="deviceSelect"></select>
     </div>
     <canvas id="powerChart"></canvas>
-  </div>
-
-</div>
+  </section>
+</main>
 
 <footer>
   © 2026 | Unified IoT Dashboard | Built with ❤️ by Piyush Pal
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

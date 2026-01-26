@@ -1,21 +1,41 @@
 const API = "https://unified-iot-dashboard-bhm0.onrender.com";
 
+const loader = document.getElementById("loading");
+const tableBody = document.querySelector("#data-table tbody");
+const deviceSelect = document.getElementById("deviceSelect");
+const totalDevicesEl = document.getElementById("totalDevices");
+const lastUpdateEl = document.getElementById("lastUpdate");
+
 let chart;
-let currentDevice = "";
+let currentDevice = null;
 
-async function loadLatestData() {
-  const res = await fetch(`${API}/latest-data`);
-  const data = await res.json();
+/* 🌐 Wait for backend (COLD START FIX) */
+async function waitForBackend() {
+  while (true) {
+    try {
+      const res = await fetch(`${API}/latest-data`);
+      const data = await res.json();
+      if (data.length > 0) {
+        loader.classList.add("hidden");
+        renderTable(data);
+        setupDevices(data);
+        updateStats(data);
+        loadGraph();
+        setInterval(refreshAll, 5000);
+        break;
+      }
+    } catch {
+      console.log("Backend waking up...");
+    }
+    await new Promise(r => setTimeout(r, 5000));
+  }
+}
 
-  const tbody = document.querySelector("#data-table tbody");
-  tbody.innerHTML = "";
-
-  document.getElementById("totalDevices").innerText = data.length;
-  document.getElementById("lastUpdate").innerText =
-    data.length ? data[0].timestamp : "--";
-
+/* 📊 Table */
+function renderTable(data) {
+  tableBody.innerHTML = "";
   data.forEach(d => {
-    tbody.innerHTML += `
+    tableBody.innerHTML += `
       <tr>
         <td>${d.device_id}</td>
         <td>${d.voltage}</td>
@@ -25,31 +45,31 @@ async function loadLatestData() {
       </tr>
     `;
   });
-
-  loadDeviceDropdown(data.map(d => d.device_id));
 }
 
-function loadDeviceDropdown(devices) {
-  const select = document.getElementById("deviceSelect");
-
-  if (select.options.length === 0) {
-    devices.forEach(d => {
-      const opt = document.createElement("option");
-      opt.value = d;
-      opt.innerText = d;
-      select.appendChild(opt);
-    });
-    currentDevice = devices[0];
-    loadChart(currentDevice);
-  }
+/* 📈 Stats */
+function updateStats(data) {
+  totalDevicesEl.textContent = data.length;
+  lastUpdateEl.textContent = new Date().toLocaleTimeString();
 }
 
-async function loadChart(device) {
-  const res = await fetch(`${API}/telemetry/${device}`);
+/* 🔽 Device dropdown */
+function setupDevices(data) {
+  const devices = [...new Set(data.map(d => d.device_id))];
+  deviceSelect.innerHTML = "";
+  devices.forEach(d => {
+    deviceSelect.innerHTML += `<option value="${d}">${d}</option>`;
+  });
+  currentDevice = devices[0];
+}
+
+/* 📉 Chart */
+async function loadGraph() {
+  const res = await fetch(`${API}/telemetry/${currentDevice}`);
   const data = await res.json();
 
   const labels = data.map(d => d.timestamp).reverse();
-  const power = data.map(d => d.power).reverse();
+  const values = data.map(d => d.power).reverse();
 
   if (chart) chart.destroy();
 
@@ -58,8 +78,8 @@ async function loadChart(device) {
     data: {
       labels,
       datasets: [{
-        label: `Power (${device})`,
-        data: power,
+        label: `Power (${currentDevice})`,
+        data: values,
         borderWidth: 2,
         tension: 0.4
       }]
@@ -67,21 +87,25 @@ async function loadChart(device) {
   });
 }
 
-// AUTO REFRESH GRAPH
-setInterval(() => {
-  if (currentDevice) loadChart(currentDevice);
-}, 5000);
+/* 🔄 Auto Refresh */
+async function refreshAll() {
+  const res = await fetch(`${API}/latest-data`);
+  const data = await res.json();
+  renderTable(data);
+  updateStats(data);
+  loadGraph();
+}
 
-// EVENTS
-document.getElementById("deviceSelect").addEventListener("change", e => {
+/* 🔀 Device change */
+deviceSelect.addEventListener("change", e => {
   currentDevice = e.target.value;
-  loadChart(currentDevice);
+  loadGraph();
 });
 
+/* 🌙 Dark Mode */
 document.getElementById("darkToggle").onclick = () => {
   document.body.classList.toggle("dark");
 };
 
-// INITIAL LOAD (FIXED)
-loadLatestData();
-setInterval(loadLatestData, 5000);
+/* 🚀 INIT */
+waitForBackend();
