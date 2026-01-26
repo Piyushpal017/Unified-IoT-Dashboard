@@ -1,54 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Unified IoT Dashboard</title>
-
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8" />
+  <title>Unified IoT Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
+<header class="navbar">
+  <h1>📊 Unified IoT Dashboard</h1>
+  <button id="darkToggle">🌙 Dark Mode</button>
+</header>
+
 <div class="container">
-    <h1>📊 Unified IoT Dashboard</h1>
 
-    <!-- Latest Data -->
-    <div class="card">
-        <h2>📡 Latest Device Readings</h2>
-
-        <table id="data-table">
-            <thead>
-                <tr>
-                    <th>Device ID</th>
-                    <th>Voltage (V)</th>
-                    <th>Current (A)</th>
-                    <th>Power (W)</th>
-                    <th>Timestamp</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+  <!-- KPI CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <h3>Total Devices</h3>
+      <p id="totalDevices">0</p>
     </div>
-
-    <!-- Power Chart -->
-    <div class="card">
-        <div class="card-header">
-            <h2>⚡ Power Usage Trend</h2>
-
-            <select id="deviceSelect">
-                <option value="meter_101">meter_101</option>
-                <option value="meter_102">meter_102</option>
-            </select>
-        </div>
-
-        <canvas id="powerChart"></canvas>
+    <div class="kpi-card">
+      <h3>Last Update</h3>
+      <p id="lastUpdate">--</p>
     </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card">
+    <h2>Latest Device Readings</h2>
+    <table id="data-table">
+      <thead>
+        <tr>
+          <th>Device</th>
+          <th>Voltage</th>
+          <th>Current</th>
+          <th>Power</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- GRAPH -->
+  <div class="card">
+    <div class="chart-header">
+      <h2>⚡ Power Usage Trend</h2>
+      <select id="deviceSelect"></select>
+    </div>
+    <canvas id="powerChart"></canvas>
+  </div>
+
 </div>
 
 <footer>
-    © 2026 | Unified IoT Dashboard | Built with ❤️ by Piyush Pal
+  © 2026 | Unified IoT Dashboard | Built with ❤️ by Piyush Pal
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
