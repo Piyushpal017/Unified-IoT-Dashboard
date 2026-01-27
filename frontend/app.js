@@ -1,22 +1,23 @@
 const API_BASE = "https://unified-iot-dashboard-bhm0.onrender.com";
 
-let chart;
+let chart = null;
 let currentDevice = "";
+let devicesLoaded = false;
 
-// retry fetch (Render cold start fix)
-async function fetchWithRetry(url, retries = 12) {
+/* ---------- SAFE FETCH (Render cold start fix) ---------- */
+async function fetchWithRetry(url, retries = 15) {
   try {
     const res = await fetch(url);
-    if (!res.ok) throw "error";
+    if (!res.ok) throw new Error("API error");
     return await res.json();
   } catch {
-    if (retries === 0) throw "server down";
+    if (retries === 0) throw new Error("Server down");
     await new Promise(r => setTimeout(r, 4000));
     return fetchWithRetry(url, retries - 1);
   }
 }
 
-// load latest table
+/* ---------- LOAD TABLE + STATS ---------- */
 async function loadLatestData() {
   const data = await fetchWithRetry(`${API_BASE}/latest-data`);
 
@@ -33,19 +34,27 @@ async function loadLatestData() {
         <td>${d.current}</td>
         <td>${d.power}</td>
         <td>${d.timestamp}</td>
-      </tr>`;
+      </tr>
+    `;
   });
 
   document.getElementById("totalDevices").innerText = data.length;
-  document.getElementById("lastUpdate").innerText = new Date().toLocaleTimeString();
+  document.getElementById("lastUpdate").innerText =
+    new Date().toLocaleTimeString();
 
-  loadDeviceDropdown(data.map(d => d.device_id));
+  if (!devicesLoaded) {
+    initDeviceDropdown(data.map(d => d.device_id));
+    devicesLoaded = true;
+  }
+
+  // 🔥 LIVE GRAPH UPDATE
+  updateChart();
 }
 
-// dropdown
-function loadDeviceDropdown(devices) {
+/* ---------- DEVICE DROPDOWN ---------- */
+function initDeviceDropdown(devices) {
   const select = document.getElementById("deviceSelect");
-  if (select.options.length > 0) return;
+  select.innerHTML = "";
 
   devices.forEach(d => {
     const opt = document.createElement("option");
@@ -55,16 +64,16 @@ function loadDeviceDropdown(devices) {
   });
 
   currentDevice = devices[0];
-  loadChart(currentDevice);
+  createChart(currentDevice);
 
   select.onchange = () => {
     currentDevice = select.value;
-    loadChart(currentDevice);
+    createChart(currentDevice);
   };
 }
 
-// chart
-async function loadChart(device) {
+/* ---------- CREATE CHART ---------- */
+async function createChart(device) {
   const data = await fetchWithRetry(`${API_BASE}/telemetry/${device}`);
 
   const labels = data.map(d => d.timestamp).reverse();
@@ -82,15 +91,31 @@ async function loadChart(device) {
         borderWidth: 2,
         tension: 0.4
       }]
+    },
+    options: {
+      animation: true,
+      responsive: true,
+      maintainAspectRatio: false
     }
   });
 }
 
-// dark mode
+/* ---------- UPDATE CHART DATA (LIVE) ---------- */
+async function updateChart() {
+  if (!chart || !currentDevice) return;
+
+  const data = await fetchWithRetry(`${API_BASE}/telemetry/${currentDevice}`);
+
+  chart.data.labels = data.map(d => d.timestamp).reverse();
+  chart.data.datasets[0].data = data.map(d => d.power).reverse();
+  chart.update();
+}
+
+/* ---------- DARK MODE ---------- */
 document.getElementById("darkToggle").onclick = () => {
   document.body.classList.toggle("dark");
 };
 
-// start
+/* ---------- START ---------- */
 loadLatestData();
 setInterval(loadLatestData, 5000);
