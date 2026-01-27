@@ -6,29 +6,38 @@
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
 
-<header>
+<!-- ===== LOADER OVERLAY ===== -->
+<div id="loaderOverlay">
+  <div class="loader-box">
+    <div class="spinner"></div>
+    <p>Connecting to IoT Server…</p>
+  </div>
+</div>
+
+<header class="navbar">
   <h1>📊 Unified IoT Dashboard</h1>
   <button id="darkToggle">🌙 Dark Mode</button>
 </header>
 
-<main class="container">
+<div class="container">
 
-  <section class="stats">
-    <div class="card">
+  <div class="stats">
+    <div class="stat-card">
       <h3>Total Devices</h3>
       <p id="totalDevices">0</p>
     </div>
-    <div class="card">
+    <div class="stat-card">
       <h3>Last Update</h3>
       <p id="lastUpdate">--</p>
     </div>
-  </section>
+  </div>
 
-  <section class="card">
+  <div class="card">
     <h2>Latest Device Readings</h2>
-    <table>
+    <table id="data-table">
       <thead>
         <tr>
           <th>Device</th>
@@ -38,23 +47,19 @@
           <th>Time</th>
         </tr>
       </thead>
-      <tbody id="tableBody"></tbody>
+      <tbody></tbody>
     </table>
-  </section>
+  </div>
 
-  <section class="card">
+  <div class="card">
     <div class="chart-header">
       <h2>⚡ Power Usage Trend</h2>
       <select id="deviceSelect"></select>
     </div>
+    <canvas id="powerChart"></canvas>
+  </div>
 
-    <!-- FIXED HEIGHT -->
-    <div class="chart-box">
-      <canvas id="powerChart"></canvas>
-    </div>
-  </section>
-
-</main>
+</div>
 
 <footer>
   © 2026 | Unified IoT Dashboard | Built with ❤️ by Piyush Pal

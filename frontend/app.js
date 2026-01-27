@@ -1,62 +1,74 @@
-const API = "https://unified-iot-dashboard-bhm0.onrender.com";
-
-const tableBody = document.getElementById("tableBody");
-const deviceSelect = document.getElementById("deviceSelect");
-const totalDevices = document.getElementById("totalDevices");
-const lastUpdate = document.getElementById("lastUpdate");
-const darkToggle = document.getElementById("darkToggle");
+const API_BASE = "https://unified-iot-dashboard-bhm0.onrender.com";
 
 let chart;
-let currentDevice = null;
+let currentDevice = "";
 
-// DARK MODE
-darkToggle.onclick = () => {
-  document.body.classList.toggle("dark");
-};
+// retry fetch (Render cold start fix)
+async function fetchWithRetry(url, retries = 12) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw "error";
+    return await res.json();
+  } catch {
+    if (retries === 0) throw "server down";
+    await new Promise(r => setTimeout(r, 4000));
+    return fetchWithRetry(url, retries - 1);
+  }
+}
 
-// LOAD TABLE
-async function loadTable() {
-  const res = await fetch(`${API}/latest-data`);
-  const data = await res.json();
+// load latest table
+async function loadLatestData() {
+  const data = await fetchWithRetry(`${API_BASE}/latest-data`);
 
-  tableBody.innerHTML = "";
-  deviceSelect.innerHTML = "";
+  document.getElementById("loaderOverlay").style.display = "none";
+
+  const tbody = document.querySelector("#data-table tbody");
+  tbody.innerHTML = "";
 
   data.forEach(d => {
-    tableBody.innerHTML += `
+    tbody.innerHTML += `
       <tr>
         <td>${d.device_id}</td>
         <td>${d.voltage}</td>
         <td>${d.current}</td>
         <td>${d.power}</td>
         <td>${d.timestamp}</td>
-      </tr>
-    `;
-
-    const opt = document.createElement("option");
-    opt.value = d.device_id;
-    opt.textContent = d.device_id;
-    deviceSelect.appendChild(opt);
+      </tr>`;
   });
 
-  totalDevices.textContent = data.length;
-  lastUpdate.textContent = new Date().toLocaleTimeString();
+  document.getElementById("totalDevices").innerText = data.length;
+  document.getElementById("lastUpdate").innerText = new Date().toLocaleTimeString();
 
-  if (!currentDevice && data.length) {
-    currentDevice = data[0].device_id;
-    loadChart(currentDevice);
-  }
+  loadDeviceDropdown(data.map(d => d.device_id));
 }
 
-// LOAD GRAPH
+// dropdown
+function loadDeviceDropdown(devices) {
+  const select = document.getElementById("deviceSelect");
+  if (select.options.length > 0) return;
+
+  devices.forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = d;
+    select.appendChild(opt);
+  });
+
+  currentDevice = devices[0];
+  loadChart(currentDevice);
+
+  select.onchange = () => {
+    currentDevice = select.value;
+    loadChart(currentDevice);
+  };
+}
+
+// chart
 async function loadChart(device) {
-  currentDevice = device;
+  const data = await fetchWithRetry(`${API_BASE}/telemetry/${device}`);
 
-  const res = await fetch(`${API}/telemetry/${device}`);
-  const data = await res.json();
-
-  const labels = data.map(d => d.timestamp);
-  const power = data.map(d => d.power);
+  const labels = data.map(d => d.timestamp).reverse();
+  const values = data.map(d => d.power).reverse();
 
   if (chart) chart.destroy();
 
@@ -66,21 +78,19 @@ async function loadChart(device) {
       labels,
       datasets: [{
         label: `Power (${device})`,
-        data: power,
-        borderColor: "#38bdf8",
+        data: values,
+        borderWidth: 2,
         tension: 0.4
       }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false
     }
   });
 }
 
-deviceSelect.onchange = e => loadChart(e.target.value);
+// dark mode
+document.getElementById("darkToggle").onclick = () => {
+  document.body.classList.toggle("dark");
+};
 
-// AUTO REFRESH (NO SCROLL BUG)
-loadTable();
-setInterval(loadTable, 5000);
-setInterval(() => loadChart(currentDevice), 7000);
+// start
+loadLatestData();
+setInterval(loadLatestData, 5000);
